@@ -1,13 +1,13 @@
-name: Main Client Build
+name: Nightly Build
 
-# on:
-#   push:
-#     branches:
-#       - master
+on:
+  push:
+    branches:
+      - main
 
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Get current time
         uses: 1466587594/get-current-time@v2

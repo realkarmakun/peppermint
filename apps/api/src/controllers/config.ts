@@ -4,7 +4,7 @@
 // SSO Provider
 // Portal Locale
 // Feature Flags
-
+import { GoogleAuth, OAuth2Client } from "google-auth-library";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import nodeMailer from "nodemailer";
 
@@ -12,9 +12,9 @@ import { checkToken } from "../lib/jwt";
 import { prisma } from "../prisma";
 
 export function configRoutes(fastify: FastifyInstance) {
-  // Check if SSO is enabled
+  // Check auth method
   fastify.get(
-    "/api/v1/config/sso/enabled",
+    "/api/v1/config/authentication/check",
 
     async (request: FastifyRequest, reply: FastifyReply) => {
       const bearer = request.headers.authorization!.split(" ")[1];
@@ -24,15 +24,13 @@ export function configRoutes(fastify: FastifyInstance) {
         const config = await prisma.config.findFirst();
 
         //@ts-expect-error
-        const { sso_active } = config;
+        const { sso_active, sso_provider } = config;
 
         if (sso_active) {
-          const provider = await prisma.provider.findFirst({});
-
           reply.send({
             success: true,
             sso: sso_active,
-            provider: provider,
+            provider: sso_provider,
           });
         }
 
@@ -44,9 +42,60 @@ export function configRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // Update SSO Provider Settings
+  // Update OIDC Provider
   fastify.post(
-    "/api/v1/config/sso/provider",
+    "/api/v1/config/authentication/oidc/update",
+
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const bearer = request.headers.authorization!.split(" ")[1];
+      const token = checkToken(bearer);
+
+      if (token) {
+        const { clientId, clientSecret, redirectUri, issuer, jwtSecret }: any =
+          request.body;
+
+        const conf = await prisma.config.findFirst();
+
+        await prisma.config.update({
+          where: { id: conf!.id },
+          data: {
+            sso_active: true,
+            sso_provider: "oidc",
+          },
+        });
+
+        const existingProvider = await prisma.openIdConfig.findFirst();
+
+        if (existingProvider === null) {
+          await prisma.openIdConfig.create({
+            data: {
+              clientId: clientId,
+              redirectUri: redirectUri,
+              issuer: issuer,
+            },
+          });
+        } else {
+          await prisma.openIdConfig.update({
+            where: { id: existingProvider.id },
+            data: {
+              clientId: clientId,
+              redirectUri: redirectUri,
+              issuer: issuer,
+            },
+          });
+        }
+
+        reply.send({
+          success: true,
+          message: "OIDC config Provider updated!",
+        });
+      }
+    }
+  );
+
+  // Update Oauth Provider
+  fastify.post(
+    "/api/v1/config/authentication/oauth/update",
 
     async (request: FastifyRequest, reply: FastifyReply) => {
       const bearer = request.headers.authorization!.split(" ")[1];
@@ -55,49 +104,48 @@ export function configRoutes(fastify: FastifyInstance) {
       if (token) {
         const {
           name,
-          client_id,
-          client_secret,
-          redirect_uri,
+          clientId,
+          clientSecret,
+          redirectUri,
           tenantId,
           issuer,
+          jwtSecret,
         }: any = request.body;
 
         const conf = await prisma.config.findFirst();
 
-        //update config to true
+        // Update config to true
         await prisma.config.update({
           where: { id: conf!.id },
           data: {
             sso_active: true,
-            sso_provider: name,
+            sso_provider: "oauth",
           },
         });
 
-        const check_provider = await prisma.provider.findFirst({});
+        // Check if the provider exists
+        const existingProvider = await prisma.oAuthProvider.findFirst();
 
-        if (check_provider === null) {
-          await prisma.provider.create({
+        if (existingProvider === null) {
+          await prisma.oAuthProvider.create({
             data: {
               name: name,
-              clientId: client_id,
-              clientSecret: client_secret,
-              active: true,
-              redirectUri: redirect_uri,
-              tenantId: tenantId,
-              issuer: issuer,
+              clientId: clientId,
+              clientSecret: clientSecret,
+              redirectUri: redirectUri,
+              scope: "", // Add appropriate scope if needed
+              authorizationUrl: "", // Add appropriate URL if needed
+              tokenUrl: "", // Add appropriate URL if needed
+              userInfoUrl: "", // Add appropriate URL if needed
             },
           });
         } else {
-          await prisma.provider.update({
-            where: { id: check_provider.id },
+          await prisma.oAuthProvider.update({
+            where: { id: existingProvider.id },
             data: {
-              name: name,
-              clientId: client_id,
-              clientSecret: client_secret,
-              active: true,
-              redirectUri: redirect_uri,
-              tenantId: tenantId,
-              issuer: issuer,
+              clientId: clientId,
+              clientSecret: clientSecret,
+              redirectUri: redirectUri,
             },
           });
         }
@@ -110,9 +158,9 @@ export function configRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // Delete SSO Provider
+  // Delete auth config
   fastify.delete(
-    "/api/v1/config/sso/provider",
+    "/api/v1/config/authentication",
 
     async (request: FastifyRequest, reply: FastifyReply) => {
       const bearer = request.headers.authorization!.split(" ")[1];
@@ -121,7 +169,7 @@ export function configRoutes(fastify: FastifyInstance) {
       if (token) {
         const conf = await prisma.config.findFirst();
 
-        //update config to true
+        // Update config to false
         await prisma.config.update({
           where: { id: conf!.id },
           data: {
@@ -130,10 +178,8 @@ export function configRoutes(fastify: FastifyInstance) {
           },
         });
 
-        const provider = await prisma.provider.findFirst({});
-        await prisma.provider.delete({
-          where: { id: provider!.id },
-        });
+        // Delete the OAuth provider
+        await prisma.oAuthProvider.deleteMany({});
 
         reply.send({
           success: true,
@@ -203,6 +249,10 @@ export function configRoutes(fastify: FastifyInstance) {
           reply: replyto,
           username,
           password,
+          serviceType,
+          clientId,
+          clientSecret,
+          redirectUri,
         }: any = request.body;
 
         const email = await prisma.email.findFirst();
@@ -216,6 +266,10 @@ export function configRoutes(fastify: FastifyInstance) {
               user: username,
               pass: password,
               active: true,
+              clientId: clientId,
+              clientSecret: clientSecret,
+              serviceType: serviceType,
+              redirectUri: redirectUri,
             },
           });
         } else {
@@ -228,9 +282,76 @@ export function configRoutes(fastify: FastifyInstance) {
               user: username,
               pass: password,
               active: active,
+              clientId: clientId,
+              clientSecret: clientSecret,
+              serviceType: serviceType,
+              redirectUri: redirectUri,
             },
           });
         }
+
+        if (serviceType === "gmail") {
+          const email = await prisma.email.findFirst();
+
+          const google = new OAuth2Client(
+            //@ts-expect-error
+            email?.clientId,
+            email?.clientSecret,
+            email?.redirectUri
+          );
+
+          const authorizeUrl = google.generateAuthUrl({
+            access_type: "offline",
+            scope: "https://mail.google.com",
+            prompt: "consent",
+          });
+
+          reply.send({
+            success: true,
+            message: "SSO Provider updated!",
+            authorizeUrl: authorizeUrl,
+          });
+        }
+
+        reply.send({
+          success: true,
+          message: "SSO Provider updated!",
+        });
+      }
+    }
+  );
+
+  fastify.get(
+    "/api/v1/config/email/oauth/gmail",
+
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const bearer = request.headers.authorization!.split(" ")[1];
+      const token = checkToken(bearer);
+
+      if (token) {
+        const { code }: any = request.query;
+
+        const email = await prisma.email.findFirst();
+
+        const google = new OAuth2Client(
+          //@ts-expect-error
+          email?.clientId,
+          email?.clientSecret,
+          email?.redirectUri
+        );
+
+        const r = await google.getToken(code);
+        // Make sure to set the credentials on the OAuth2 client
+
+        await prisma.email.update({
+          where: { id: email?.id },
+          data: {
+            refreshToken: r.tokens.refresh_token,
+            accessToken: r.tokens.access_token,
+            expiresIn: r.tokens.expiry_date,
+            serviceType: "gmail",
+          },
+        });
 
         reply.send({
           success: true,
@@ -259,17 +380,16 @@ export function configRoutes(fastify: FastifyInstance) {
           });
         }
 
-        const emails = await prisma.email.findMany();
-        const email = emails[0];
+        const email = await prisma.email.findFirst();
 
         const mail = nodeMailer.createTransport({
           // @ts-ignore
-          host: email.host,
-          port: email.port,
-          secure: email.port === "465" ? true : false,
+          host: email?.host,
+          port: email?.port,
+          secure: email?.port === "465" ? true : false,
           auth: {
-            user: email.user,
-            pass: email.pass,
+            user: email?.user,
+            pass: email?.pass,
           },
         });
 

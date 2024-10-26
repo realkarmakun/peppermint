@@ -16,7 +16,16 @@ import { BlockNoteView } from "@blocknote/mantine";
 
 import { useUser } from "../../store/session";
 import { IconCombo, UserCombo } from "../Combo";
-import { CircleCheck, CircleDotDashed, LifeBuoy, Loader, LoaderCircle, SignalHigh, SignalLow, SignalMedium } from "lucide-react";
+import {
+  CircleCheck,
+  CircleDotDashed,
+  LifeBuoy,
+  Loader,
+  LoaderCircle,
+  SignalHigh,
+  SignalLow,
+  SignalMedium,
+} from "lucide-react";
 
 const ticketStatusMap = [
   { id: 1, value: "needs_support", name: "Needs Support", icon: LifeBuoy },
@@ -64,7 +73,9 @@ export default function Ticket() {
     return res.json();
   };
 
-  const { data, status, refetch } = useQuery("fetchTickets", fetchTicketById);
+  const { data, status, refetch } = useQuery("fetchTickets", fetchTicketById, {
+    enabled: false,
+  });
 
   useEffect(() => {
     refetch();
@@ -337,7 +348,7 @@ export default function Ticket() {
         if (typeof content === "object") {
           setInitialContent(content);
         } else {
-          setInitialContent(undefined)
+          setInitialContent(undefined);
         }
       });
     }
@@ -379,7 +390,7 @@ export default function Ticket() {
       {status === "success" && (
         <main className="flex-1 min-h-[90vh] py-8">
           <div className="mx-auto max-w-7xl w-full px-4 flex flex-col xl:flex-row justify-center">
-            <div className="xl:border-r  xl:pr-8 xl:w-2/3">
+            <div className="xl:border-r xl:pr-8 xl:w-2/3">
               <div className="">
                 <div className="md:flex md:justify-between md:space-x-4 xl:border-b xl:pb-4">
                   <div className="w-full">
@@ -392,23 +403,38 @@ export default function Ticket() {
                         name="title"
                         id="title"
                         style={{ fontSize: "1.5rem" }}
-                        className="border-none px-0 pl-0.5 w-1/2 m block text-foreground bg-transparent font-bold focus:outline-none focus:ring-0 placeholder:text-primary sm:text-sm sm:leading-6"
+                        className="border-none -mt-[1px] px-0 pl-0.5 w-1/2 m block text-foreground bg-transparent font-bold focus:outline-none focus:ring-0 placeholder:text-primary sm:text-sm sm:leading-6"
                         value={title}
                         defaultValue={data.ticket.title}
                         onChange={(e) => setTitle(e.target.value)}
+                        key={data.ticket.id}
                       />
                     </div>
                     <div className="mt-2 text-xs flex flex-row items-center space-x-1 text-gray-500 dark:text-white">
-                      {!data.ticket.isComplete ? (
-                        <div className="flex items-center space-x-2">
-                          <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                            {t("open_issue")}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center space-x-2">
-                          <span className="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">
-                            {t("closed_issue")}
+                      <div>
+                        {!data.ticket.isComplete ? (
+                          <div className="flex items-center space-x-2">
+                            <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                              {t("open_issue")}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-2">
+                            <span className="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">
+                              {t("closed_issue")}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <span className="inline-flex items-center rounded-md bg-orange-50 px-2 py-1 text-xs font-medium text-orange-700 ring-1 ring-inset ring-orange-600/20">
+                          {data.ticket.type}
+                        </span>
+                      </div>
+                      {data.ticket.client && (
+                        <div>
+                          <span className="inline-flex items-center rounded-md bg-orange-50 px-2 py-1 text-xs font-medium text-orange-700 ring-1 ring-inset ring-orange-600/20">
+                            {data.ticket.client.name}
                           </span>
                         </div>
                       )}
@@ -416,78 +442,39 @@ export default function Ticket() {
                   </div>
                 </div>
                 <aside className="mt-4 xl:hidden">
-                  <div className="py-3 border-b ">
-                    <div className="border-t ">
-                      <div className="flex flex-row items-center justify-between">
-                        <span className="text-sm font-medium text-gray-500 mt-2">
-                          {t("labels")}
-                        </span>
-                        <span className="text-sm font-medium text-gray-500 mt-2">
-                          {t("edit-btn")}
-                        </span>
+                  <div className="border-b pb-1">
+                    <div className="border-t pt-1">
+                      <div className="flex flex-col sm:flex-row space-x-2">
+                        <div className="ml-2">
+                          {users && (
+                            <UserCombo
+                              value={users}
+                              update={setN}
+                              defaultName={
+                                data.ticket.assignedTo
+                                  ? data.ticket.assignedTo.name
+                                  : ""
+                              }
+                            />
+                          )}
+                        </div>
+
+                        <IconCombo
+                          value={priorityOptions}
+                          update={setPriority}
+                          defaultName={
+                            data.ticket.priority ? data.ticket.priority : ""
+                          }
+                        />
+
+                        <IconCombo
+                          value={ticketStatusMap}
+                          update={setTicketStatus}
+                          defaultName={
+                            data.ticket.status ? data.ticket.status : ""
+                          }
+                        />
                       </div>
-                      <ul role="list" className="mt-2 leading-8 space-x-2">
-                        {data.ticket.priority === "Low" && (
-                          <li className="inline">
-                            <div className="relative inline-flex items-center rounded-full px-2.5 py-1 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                              <div className="absolute flex flex-shrink-0 items-center justify-center">
-                                <span
-                                  className="h-1.5 w-1.5 rounded-full bg-blue-500"
-                                  aria-hidden="true"
-                                />
-                              </div>
-                              <div className="ml-3 text-xs font-semibold text-gray-900">
-                                {data.ticket.priority} {t("priority")}
-                              </div>
-                            </div>
-                          </li>
-                        )}
-                        {data.ticket.priority === "Normal" && (
-                          <li className="inline">
-                            <div className="relative inline-flex items-center rounded-full px-2.5 py-1 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                              <div className="absolute flex flex-shrink-0 items-center justify-center">
-                                <span
-                                  className="h-1.5 w-1.5 rounded-full bg-green-500"
-                                  aria-hidden="true"
-                                />
-                              </div>
-                              <div className="ml-3 text-xs font-semibold text-gray-900">
-                                {data.ticket.priority} {t("priority")}
-                              </div>
-                            </div>
-                          </li>
-                        )}
-                        {data.ticket.priority === "High" && (
-                          <li className="inline">
-                            <div className="relative inline-flex items-center rounded-full px-2.5 py-1 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                              <div className="absolute flex flex-shrink-0 items-center justify-center">
-                                <span
-                                  className="h-1.5 w-1.5 rounded-full bg-rose-500"
-                                  aria-hidden="true"
-                                />
-                              </div>
-                              <div className="ml-3 text-xs font-semibold text-gray-900">
-                                {data.ticket.priority} {t("priority")}
-                              </div>
-                            </div>
-                          </li>
-                        )}
-                        {data.ticket.status && (
-                          <li className="inline">
-                            <div className="relative inline-flex items-center rounded-full px-2.5 py-1 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                              <div className="absolute flex flex-shrink-0 items-center justify-center">
-                                <span
-                                  className="h-1.5 w-1.5 rounded-full bg-rose-500"
-                                  aria-hidden="true"
-                                />
-                              </div>
-                              <div className="ml-3 text-xs font-semibold text-gray-900">
-                                {ticketStatusMap[data.ticket.status]}
-                              </div>
-                            </div>
-                          </li>
-                        )}
-                      </ul>
                     </div>
                   </div>
                 </aside>

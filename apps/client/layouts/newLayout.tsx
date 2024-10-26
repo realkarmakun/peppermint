@@ -27,7 +27,13 @@ import { AccountDropdown } from "../components/AccountDropdown";
 
 import { useUser } from "../store/session";
 import ThemeSettings from "../components/ThemeSettings";
-
+import {
+  Bell,
+  Building,
+  Settings,
+  SquareActivity,
+  SquareKanban,
+} from "lucide-react";
 
 const quickActions = [
   // { name: "Add new file...", icon: DocumentPlusIcon, shortcut: "N", url: "#" },
@@ -77,7 +83,7 @@ export default function NewLayout({ children }: any) {
     {
       name: t("sl_dashboard"),
       href: `/${locale}/`,
-      icon: HomeIcon,
+      icon: Building,
       current: location.pathname === "/" ? true : false,
       initial: "h",
     },
@@ -97,52 +103,6 @@ export default function NewLayout({ children }: any) {
     //   inital: null,
     // },
   ];
-
-  const admin_settings = [
-    {
-      name: t("sl_users"),
-      href: "/admin/users/internal",
-      current: location.pathname === "/admin/users/internal",
-    },
-    {
-      name: t("sl_clients"),
-      href: "/admin/clients",
-      current: location.pathname === "/admin/clients",
-    },
-    {
-      name: "Email Queues",
-      href: "/admin/email-queues",
-      current: location.pathname === "/admin/email-queues",
-    },
-    {
-      name: "Webhooks",
-      href: "/admin/webhooks",
-      current: location.pathname === "/admin/webhooks",
-    },
-    {
-      name: "Outbound Emails",
-      href: "/admin/email",
-      current: location.pathname === "/admin/email",
-    },
-    {
-      name: "SSO",
-      href: "/admin/sso",
-      current: location.pathname === "/admin/sso",
-    },
-  ];
-
-  // async function getQueues() {
-  //   const res = await fetch(
-  //     `/api/v1/email-queues/all`,
-  //     {
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: `Bearer ${getCookie("session")}`,
-  //       },
-  //     }
-  //   ).then((res) => res.json());
-  //   setQueues(res.queues);
-  // }
 
   function handleKeyPress(event: any) {
     const pathname = location.pathname;
@@ -196,7 +156,7 @@ export default function NewLayout({ children }: any) {
   return (
     !loading &&
     user && (
-      <div className="min-h-screen overflow-hidden bg-white dark:bg-[#0A090C]">
+      <div className="min-h-screen overflow-hidden bg-background">
         <Transition.Root show={sidebarOpen} as={Fragment}>
           <Dialog
             as="div"
@@ -250,213 +210,122 @@ export default function NewLayout({ children }: any) {
                     </div>
                   </Transition.Child>
                   {/* Sidebar component, swap this element with another sidebar if you like */}
-                  <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4">
+                  <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-background px-6 pb-4">
                     <div className="flex align-middle flex-row h-14 items-center border-b-[1px]">
-                      {/* <img className="h-8 w-auto" src="/logo.svg" alt="Workflow" /> */}
                       <Link href="https://peppermint.sh">
-                        <span className="text-3xl ml-2  hover:text-green-600 font-bold ">
+                        <span className="text-3xl ml-2 text-green-500  hover:text-green-600 font-bold ">
                           Peppermint
                         </span>
                       </Link>
                     </div>
-                    <nav className="flex flex-1 flex-col">
-                      <ul role="list" className="flex flex-1 flex-col gap-y-7">
+                    <nav className="flex flex-1 flex-col px-6">
+                      <ul
+                        role="list"
+                        className="flex flex-1 flex-col gap-y-7 w-full"
+                      >
                         <li>
-                          <ul role="list" className="-mx-2 space-y-1">
-                            {navigation.map((item: any) =>
-                              !item.children ? (
-                                <li key={item.name}>
-                                  <Link
-                                    href={item.href}
-                                    className={classNames(
-                                      item.current
-                                        ? "bg-gray-50 text-indigo-600"
-                                        : "text-gray-700 hover:text-indigo-600 hover:bg-gray-50",
-                                      "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-                                    )}
-                                  >
-                                    <item.icon
-                                      className={classNames(
-                                        item.current
-                                          ? "text-indigo-600"
-                                          : "text-gray-400 group-hover:text-indigo-600",
-                                        "h-6 w-6 shrink-0"
-                                      )}
+                          <ul role="list" className="-mx-2 space-y-1 w-full">
+                            <CreateTicketModal
+                              keypress={keypressdown}
+                              setKeyPressDown={setKeyPressDown}
+                            />
+                            {navigation.map((item: any) => (
+                              <li key={item.name}>
+                                <Link
+                                  href={item.href}
+                                  className={classNames(
+                                    item.current
+                                      ? "bg-secondary dark:bg-primary"
+                                      : "hover:bg-secondary dark:hover:bg-secondary-foreground dark:hover:text-gray-900 ",
+                                    "group -mx-2 flex gap-x-3 p-1 text-xs rounded-md font-semibold leading-6"
+                                  )}
+                                >
+                                  <item.icon
+                                    className="h-4 w-4 ml-1 shrink-0 mt-1"
+                                    aria-hidden="true"
+                                  />
+                                  <span className="whitespace-nowrap">
+                                    {item.name}
+                                  </span>
+                                </Link>
+                              </li>
+                            ))}
+                            <ul className="w-full space-y-1">
+                              <li>
+                                <Link
+                                  href="/issues"
+                                  className={classNames(
+                                    location.pathname === "/issues"
+                                      ? "bg-secondary dark:bg-primary"
+                                      : " hover:bg-[#F0F3F9] dark:hover:bg-white dark:hover:text-gray-900 ",
+                                    "group -mx-2 flex gap-x-3 p-1 rounded-md text-xs font-semibold leading-6"
+                                  )}
+                                >
+                                  <TicketIcon className="h-4 w-4 ml-1 shrink-0 mt-1" />
+                                  <span className="whitespace-nowrap">
+                                    Issues
+                                  </span>
+                                </Link>
+                              </li>
+                              <li className="ml-8">
+                                <Link
+                                  href="/issues/open"
+                                  className={classNames(
+                                    location.pathname === "/issues/open"
+                                      ? "bg-secondary dark:bg-primary"
+                                      : " hover:bg-[#F0F3F9] dark:hover:bg-white dark:hover:text-gray-900 ",
+                                    "group -mx-2 flex gap-x-3 p-1 pl-3 rounded-md text-xs font-semibold leading-6"
+                                  )}
+                                >
+                                  <span className="whitespace-nowrap">
+                                    {user.name}'s open
+                                  </span>
+                                </Link>
+                              </li>
+
+                              <li className="ml-8 ">
+                                <Link
+                                  href="/issues/closed"
+                                  className={classNames(
+                                    location.pathname === "/issues/closed"
+                                      ? "bg-secondary dark:bg-primary"
+                                      : " hover:bg-[#F0F3F9] dark:hover:bg-white dark:hover:text-gray-900 ",
+                                    "group -mx-2 flex gap-x-3 p-1 pl-3 rounded-md text-xs font-semibold leading-6"
+                                  )}
+                                >
+                                  <span className="whitespace-nowrap">
+                                    {user.name}'s closed
+                                  </span>
+                                </Link>
+                              </li>
+                            </ul>
+                            <li className="mt-auto space-y-4">
+                              {user.isAdmin && (
+                                <Link
+                                  href="/admin"
+                                  className={classNames(
+                                    location.pathname.includes("/admin")
+                                      ? "bg-secondary dark:bg-primary"
+                                      : " hover:bg-[#F0F3F9] dark:hover:bg-white dark:hover:text-gray-900 ",
+                                    "group -mx-2 flex gap-x-3 p-1 rounded-md text-xs font-semibold leading-6"
+                                  )}
+                                >
+                                  <>
+                                    <Cog6ToothIcon
+                                      className="h-4 w-4 ml-1 shrink-0 mt-1"
                                       aria-hidden="true"
                                     />
                                     <span className="whitespace-nowrap">
-                                      {item.name}
+                                      {t("admin_settings")}
                                     </span>
-                                  </Link>
-                                </li>
-                              ) : (
-                                <Disclosure
-                                  as="div"
-                                  key={item.name}
-                                  className="space-y-1"
-                                >
-                                  {({ open }) => (
-                                    <>
-                                      {queues.length > 0 && (
-                                        <>
-                                          <Disclosure.Button
-                                            className={classNames(
-                                              item.current
-                                                ? "bg-green-400 text-white"
-                                                : "bg-gray-900 text-white hover:bg-green-400 hover:text-white",
-                                              "group w-full flex items-center pl-2 pr-2 py-2 text-left text-sm font-medium rounded-md focus:outline-none"
-                                            )}
-                                          >
-                                            <svg
-                                              className={classNames(
-                                                open
-                                                  ? "text-white rotate-90"
-                                                  : "text-white",
-                                                "mr-2 flex-shrink-0 h-5 w-5 transform group-hover:text-white transition-colors ease-in-out duration-150"
-                                              )}
-                                              viewBox="0 0 20 20"
-                                              aria-hidden="true"
-                                            >
-                                              <path
-                                                d="M6 6L14 10L6 14V6Z"
-                                                fill="currentColor"
-                                              />
-                                            </svg>
-                                            {item.name}
-                                          </Disclosure.Button>
-                                          <Disclosure.Panel className="space-y-1">
-                                            {item.children.map(
-                                              (subItem: any) => (
-                                                <Link
-                                                  href={`/queue/${subItem.name}`}
-                                                >
-                                                  <Disclosure.Button
-                                                    key={subItem.name}
-                                                    className="group w-full flex items-center pl-10 pr-2 py-2 text-sm font-medium text-white rounded-md hover:text-white hover:bg-green-400 focus:outline-none"
-                                                  >
-                                                    {subItem.name}
-                                                  </Disclosure.Button>
-                                                </Link>
-                                              )
-                                            )}
-                                          </Disclosure.Panel>
-                                        </>
-                                      )}
-                                    </>
-                                  )}
-                                </Disclosure>
-                              )
-                            )}
+                                  </>
+                                </Link>
+                              )}
+                            </li>
                           </ul>
                         </li>
-
-                        {user.isAdmin && (
-                          <li>
-                            <span className="mb-2 text-sm font-bold">
-                              Admin Settings
-                            </span>
-                            <ul role="list" className="-mx-2 space-y-1">
-                              {admin_settings.map((item: any) =>
-                                !item.children ? (
-                                  <li key={item.name}>
-                                    <Link
-                                      href={item.href}
-                                      className={classNames(
-                                        item.current
-                                          ? "bg-gray-50 text-indigo-600"
-                                          : "text-gray-700 hover:text-indigo-600 hover:bg-gray-50",
-                                        "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-                                      )}
-                                    >
-                                      {/* <item.icon
-                                     className={classNames(
-                                       item.current
-                                         ? "text-indigo-600"
-                                         : "text-gray-400 group-hover:text-indigo-600",
-                                       "h-6 w-6 shrink-0"
-                                     )}
-                                     aria-hidden="true"
-                                   /> */}
-                                      <span className="whitespace-nowrap">
-                                        {item.name}
-                                      </span>
-                                    </Link>
-                                  </li>
-                                ) : (
-                                  <Disclosure
-                                    as="div"
-                                    key={item.name}
-                                    className="space-y-1"
-                                  >
-                                    {({ open }) => (
-                                      <>
-                                        {queues.length > 0 && (
-                                          <>
-                                            <Disclosure.Button
-                                              className={classNames(
-                                                item.current
-                                                  ? "bg-green-400 text-white"
-                                                  : "bg-gray-900 text-white hover:bg-green-400 hover:text-white",
-                                                "group w-full flex items-center pl-2 pr-2 py-2 text-left text-sm font-medium rounded-md focus:outline-none"
-                                              )}
-                                            >
-                                              <svg
-                                                className={classNames(
-                                                  open
-                                                    ? "text-white rotate-90"
-                                                    : "text-white",
-                                                  "mr-2 flex-shrink-0 h-5 w-5 transform group-hover:text-white transition-colors ease-in-out duration-150"
-                                                )}
-                                                viewBox="0 0 20 20"
-                                                aria-hidden="true"
-                                              >
-                                                <path
-                                                  d="M6 6L14 10L6 14V6Z"
-                                                  fill="currentColor"
-                                                />
-                                              </svg>
-                                              {item.name}
-                                            </Disclosure.Button>
-                                            <Disclosure.Panel className="space-y-1">
-                                              {item.children.map(
-                                                (subItem: any) => (
-                                                  <Link
-                                                    href={`/queue/${subItem.name}`}
-                                                  >
-                                                    <Disclosure.Button
-                                                      key={subItem.name}
-                                                      className="group w-full flex items-center pl-10 pr-2 py-2 text-sm font-medium text-white rounded-md hover:text-white hover:bg-green-400 focus:outline-none"
-                                                    >
-                                                      {subItem.name}
-                                                    </Disclosure.Button>
-                                                  </Link>
-                                                )
-                                              )}
-                                            </Disclosure.Panel>
-                                          </>
-                                        )}
-                                      </>
-                                    )}
-                                  </Disclosure>
-                                )
-                              )}
-                            </ul>
-                          </li>
-                        )}
-
-                        <li className="mt-auto">
-                          <a
-                            href="#"
-                            className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-gray-700 hover:bg-gray-50 hover:text-indigo-600"
-                          >
-                            <Cog6ToothIcon
-                              className="h-6 w-6 shrink-0 text-gray-400 group-hover:text-indigo-600"
-                              aria-hidden="true"
-                            />
-                            Settings
-                          </a>
-                        </li>
                       </ul>
+                      <ThemeSettings />
                     </nav>
                   </div>
                 </Dialog.Panel>
@@ -470,8 +339,8 @@ export default function NewLayout({ children }: any) {
           {/* Sidebar component, swap this element with another sidebar if you like */}
           <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-background pb-4">
             <div className="flex align-middle flex-row h-14 items-center border-b-[1px] px-6">
-              <Link href="https://peppermint.sh">
-                <span className="text-3xl ml-2  hover:text-green-600 font-bold text-primary">
+              <Link href="https://peppermint.sh" target="_blank">
+                <span className="text-3xl ml-2 text-green-500 hover:text-green-600 font-bold">
                   Peppermint
                 </span>
               </Link>
@@ -519,7 +388,7 @@ export default function NewLayout({ children }: any) {
                             "group -mx-2 flex gap-x-3 p-1 rounded-md text-xs font-semibold leading-6"
                           )}
                         >
-                          <TicketIcon className="h-4 w-4 ml-1 shrink-0 mt-1" />
+                          <SquareKanban className="h-4 w-4 ml-1 shrink-0 mt-1" />
                           <span className="whitespace-nowrap">Issues</span>
                           <div className="flex w-full justify-end float-right">
                             <span className="flex h-6 w-6 shrink-0 items-center bg-transparent border-none justify-center text-md font-medium">
@@ -582,7 +451,7 @@ export default function NewLayout({ children }: any) {
                           )}
                         >
                           <>
-                            <Cog6ToothIcon
+                            <Settings
                               className="h-4 w-4 ml-1 shrink-0 mt-1"
                               aria-hidden="true"
                             />
@@ -627,11 +496,11 @@ export default function NewLayout({ children }: any) {
             />
 
             <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6 items-center">
-              <div className="flex w-full justify-start items-center space-x-6">
+              <div className="sm:flex hidden w-full justify-start items-center space-x-6">
                 {user.isAdmin && (
                   <Link href="https://github.com/Peppermint-Lab/peppermint/releases">
                     <span className="inline-flex items-center rounded-md bg-green-700/10 px-3 py-2 text-xs font-medium text-green-600 ring-1 ring-inset ring-green-500/20">
-                      Version 0.4.9
+                      Version {process.env.NEXT_PUBLIC_CLIENT_VERSION}
                     </span>
                   </Link>
                 )}
@@ -645,7 +514,7 @@ export default function NewLayout({ children }: any) {
                   className="relative rounded-md p-2 text-gray-400 hover:text-gray-500 hover:cursor-pointer focus:outline-none"
                 >
                   <Link href="/notifications">
-                    <InboxStackIcon className="h-4 w-4 text-foreground" />
+                    <Bell className="h-4 w-4 text-foreground" />
                     {user.notifcations.filter(
                       (notification) => !notification.read
                     ).length > 0 && (
@@ -666,7 +535,6 @@ export default function NewLayout({ children }: any) {
                     target="_blank"
                     className="hover:cursor-pointer"
                   >
-
                     <Button
                       variant="outline"
                       className="text-foreground hover:cursor-pointer whitespace-nowrap"
